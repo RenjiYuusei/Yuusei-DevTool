@@ -7,10 +7,11 @@
   --text-secondary: #9aa0a6;
   --accent-color: #8ab4f8;
   --hover-bg: #35363a;
-  --selection-bg: #1c3a5e; /* deep blue selection */
+  --selection-bg: #1c3a5e;
   --row-hover-bg: #2a2b2e;
   --code-bg: #202124;
   --code-text: #e8eaed;
+  --modal-overlay: rgba(0, 0, 0, 0.6);
 }
 
 html, body {
@@ -18,7 +19,7 @@ html, body {
   padding: 0;
   height: 100%;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  font-size: 12px;
+  font-size: 14px; /* Slightly larger base font for mobile */
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -31,34 +32,32 @@ html, body {
   background-color: var(--header-bg);
   border-bottom: 1px solid var(--border-color);
   display: flex;
-  height: 28px;
+  height: 40px; /* Taller for touch */
   flex-shrink: 0;
+  align-items: center;
 }
 
 .tabs {
   display: flex;
+  height: 100%;
 }
 
 .tab-btn {
   background: none;
   border: none;
-  padding: 0 15px;
+  padding: 0 20px;
   cursor: pointer;
   color: var(--text-secondary);
-  border-bottom: 2px solid transparent;
+  border-bottom: 3px solid transparent; /* Thicker indicator */
   outline: none;
-  font-size: 12px;
+  font-size: 14px;
   transition: color 0.2s, border-bottom 0.2s;
+  height: 100%;
 }
 
 .tab-btn.active {
   color: var(--text-primary);
-  border-bottom: 2px solid var(--accent-color);
-}
-
-.tab-btn:hover {
-  background-color: var(--hover-bg);
-  color: var(--text-primary);
+  border-bottom: 3px solid var(--accent-color);
 }
 
 /* Panels */
@@ -78,11 +77,11 @@ html, body {
 .toolbar {
   display: flex;
   align-items: center;
-  padding: 5px;
+  padding: 8px;
   border-bottom: 1px solid var(--border-color);
   background: var(--header-bg);
   gap: 10px;
-  flex-wrap: wrap; /* Mobile friendly */
+  flex-wrap: wrap;
 }
 
 .filter-group {
@@ -95,12 +94,16 @@ html, body {
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   color: var(--text-secondary);
+  padding: 4px; /* Touch target padding */
 }
 
-.filter-group label:hover {
-  color: var(--text-primary);
+.controls-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto; /* Push to right */
 }
 
 button {
@@ -108,11 +111,8 @@ button {
     border: 1px solid var(--border-color);
     color: var(--text-primary);
     border-radius: 4px;
-    padding: 4px 8px;
+    padding: 6px 12px; /* Larger button */
     cursor: pointer;
-}
-button:hover {
-    background-color: #3c4043;
 }
 
 /* Network Table */
@@ -124,15 +124,14 @@ button:hover {
 .data-grid {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed; /* Better for mobile */
+  table-layout: fixed;
 }
 
 .data-grid th {
   text-align: left;
   background: var(--header-bg);
-  border-right: 1px solid var(--border-color);
   border-bottom: 1px solid var(--border-color);
-  padding: 4px 8px;
+  padding: 8px; /* More padding */
   position: sticky;
   top: 0;
   font-weight: normal;
@@ -142,24 +141,25 @@ button:hover {
 
 .data-grid td {
   border-bottom: 1px solid var(--border-color);
-  padding: 4px 8px;
+  padding: 8px; /* More padding */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--text-primary);
+  height: 30px; /* Minimum row height */
 }
 
 .data-grid tr:hover {
   background-color: var(--row-hover-bg);
+  cursor: pointer;
 }
 
 .data-grid tr.error {
-  color: #f28b82; /* Light red */
+  color: #f28b82;
 }
 
-/* Cell sub-text for mobile compactness */
 .cell-sub {
-    font-size: 10px;
+    font-size: 11px;
     color: var(--text-secondary);
 }
 
@@ -182,32 +182,20 @@ button:hover {
 }
 
 .file-tree-item {
-  padding: 4px 8px;
+  padding: 8px; /* Larger touch target */
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   color: var(--text-secondary);
-}
-
-.file-tree-item:hover {
-  background-color: var(--hover-bg);
-  color: var(--text-primary);
 }
 
 .file-tree-item.selected {
   background-color: var(--selection-bg);
   color: var(--text-primary);
-}
-
-.file-icon {
-    font-size: 10px;
-    opacity: 0.7;
-    width: 16px;
-    text-align: center;
 }
 
 .main-content {
@@ -224,9 +212,52 @@ button:hover {
   tab-size: 2;
   color: var(--code-text);
   line-height: 1.5;
+  font-size: 12px;
 }
 
-/* Mobile / Responsive Adjustments */
+/* Modal */
+.modal {
+  display: flex; /* Hidden by default via class */
+  position: fixed;
+  z-index: 100;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--modal-overlay);
+  align-items: center;
+  justify-content: center;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+  background-color: var(--panel-bg);
+  padding: 20px;
+  border: 1px solid var(--border-color);
+  width: 80%;
+  max-width: 500px;
+  max-height: 80%;
+  overflow-y: auto;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.close-modal {
+  color: var(--text-secondary);
+  float: right;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.close-modal:hover {
+  color: var(--text-primary);
+}
+
+/* Mobile Adjustments */
 @media (max-width: 600px) {
   #sources-panel {
     flex-direction: column;
@@ -234,24 +265,17 @@ button:hover {
 
   .sidebar {
     width: 100%;
-    height: 150px; /* Split view vertical */
+    height: 180px;
     border-right: none;
     border-bottom: 1px solid var(--border-color);
     flex-shrink: 0;
   }
 
-  .data-grid th:nth-child(4), /* Size */
-  .data-grid td:nth-child(4) {
+  /* Hide less important columns */
+  .data-grid th:nth-child(4), .data-grid td:nth-child(4),
+  .data-grid th:nth-child(5), .data-grid td:nth-child(5) {
       display: none;
   }
 
-  .data-grid th:nth-child(5), /* Time */
-  .data-grid td:nth-child(5) {
-      display: none;
-  }
-
-  /* Make the name column take more space */
-  .data-grid th:first-child {
-      width: 50%;
-  }
+  .data-grid th:first-child { width: 60%; }
 }

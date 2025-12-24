@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Custom Chrome DevTools",
-  "version": "1.0",
-  "description": "A DevTools extension with Network (filters) and Source tabs.",
+  "version": "2.0",
+  "description": "A DevTools extension with Network (filters) and Source tabs. Mobile friendly.",
   "permissions": [
     "debugger",
     "tabs",
@@ -12,19 +12,18 @@
     "<all_urls>"
   ],
   "background": {
-    "service_worker": "src/background.js"
+    "service_worker": "background.js"
   },
   "action": {
-    "default_popup": "src/popup/popup.html",
     "default_icon": {
-      "16": "src/icons/icon16.png",
-      "48": "src/icons/icon48.png",
-      "128": "src/icons/icon128.png"
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
     }
   },
   "icons": {
-    "16": "src/icons/icon16.png",
-    "48": "src/icons/icon48.png",
-    "128": "src/icons/icon128.png"
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   }
 }

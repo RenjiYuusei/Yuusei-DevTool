@@ -17,10 +17,13 @@ setTabId(tabId);
 const networkList = document.getElementById('network-list');
 const filterRadios = document.querySelectorAll('input[name="filter"]');
 const clearNetworkBtn = document.getElementById('clear-network');
+const preserveCheckbox = document.getElementById('preserve-log');
+const detailsModal = document.getElementById('details-modal');
+
 const fileTree = document.getElementById('file-tree');
 const codeViewer = document.getElementById('code-viewer');
 
-Network.initNetwork(networkList, filterRadios, clearNetworkBtn);
+Network.initNetwork(networkList, filterRadios, clearNetworkBtn, preserveCheckbox, detailsModal);
 Sources.initSources(fileTree, codeViewer);
 
 // 3. Tab Switching
@@ -44,7 +47,14 @@ chrome.debugger.onEvent.addListener((source, method, params) => {
 
     if (method.startsWith('Network.')) {
         Network.handleNetworkEvent(method, params);
-    } else if (method.startsWith('Debugger.') || method === 'Page.frameNavigated') {
+    }
+    else if (method === 'Page.frameNavigated') {
+        // Only handle top frame navigation for clearing
+        if (!params.frame || !params.frame.parentId) {
+             Network.handleNavigation();
+        }
+    }
+    else if (method.startsWith('Debugger.')) {
         if (method === 'Debugger.scriptParsed') {
             Sources.handleScriptParsed(params);
         }

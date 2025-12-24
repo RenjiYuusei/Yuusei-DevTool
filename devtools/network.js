@@ -4,8 +4,11 @@ import { getFileName, formatBytes } from './utils.js';
 const networkRequests = new Map(); // requestId -> requestData
 let currentFilter = 'all';
 let networkListEl = null;
+let preserveLog = false;
+let detailsModal = null;
+let detailsBody = null;
 
-export function initNetwork(listElement, filterRadios, clearBtn) {
+export function initNetwork(listElement, filterRadios, clearBtn, preserveCheckbox, modalElement) {
     networkListEl = listElement;
 
     // Filter Listeners
@@ -18,9 +21,39 @@ export function initNetwork(listElement, filterRadios, clearBtn) {
 
     if (clearBtn) {
         clearBtn.addEventListener('click', () => {
-            networkRequests.clear();
-            networkListEl.innerHTML = '';
+            clearTable();
         });
+    }
+
+    if (preserveCheckbox) {
+        preserveCheckbox.addEventListener('change', (e) => {
+            preserveLog = e.target.checked;
+        });
+    }
+
+    if (modalElement) {
+        detailsModal = modalElement;
+        detailsBody = modalElement.querySelector('#details-body');
+        modalElement.querySelector('.close-modal').onclick = () => {
+            detailsModal.classList.add('hidden');
+        };
+        // Close on click outside
+        window.onclick = (event) => {
+            if (event.target === detailsModal) {
+                detailsModal.classList.add('hidden');
+            }
+        };
+    }
+}
+
+function clearTable() {
+    networkRequests.clear();
+    networkListEl.innerHTML = '';
+}
+
+export function handleNavigation() {
+    if (!preserveLog) {
+        clearTable();
     }
 }
 
@@ -49,6 +82,8 @@ export function handleNetworkEvent(method, params) {
             if (!req.type || req.type === 'Other') {
                 req.type = mapMimeToType(response.mimeType);
             }
+            // Store some headers if needed for details
+            req.headers = response.headers;
             renderNetworkRow(requestId);
         }
     }
@@ -98,6 +133,7 @@ function renderNetworkRow(requestId) {
     if (!tr) {
         tr = document.createElement('tr');
         tr.id = `req-${requestId}`;
+        tr.onclick = () => showDetails(req);
         networkListEl.appendChild(tr);
     }
 
@@ -114,6 +150,34 @@ function renderNetworkRow(requestId) {
         <td>${formatBytes(req.size)}</td>
         <td>${req.time || 'Pending'}</td>
     `;
+}
+
+function showDetails(req) {
+    if (!detailsModal || !detailsBody) return;
+
+    let html = `
+        <p><strong>URL:</strong> <span style="word-break: break-all;">${req.url}</span></p>
+        <p><strong>Method:</strong> ${req.method}</p>
+        <p><strong>Status:</strong> ${req.status}</p>
+        <p><strong>Type:</strong> ${req.type}</p>
+        <p><strong>Size:</strong> ${formatBytes(req.size)}</p>
+        <p><strong>Time:</strong> ${req.time || '-'}</p>
+    `;
+
+    if (req.error) {
+        html += `<p style="color:red"><strong>Error:</strong> ${req.error}</p>`;
+    }
+
+    if (req.headers) {
+         html += `<h4>Response Headers</h4><div style="max-height: 100px; overflow: auto; background: #333; padding: 5px;">`;
+         for (const [key, value] of Object.entries(req.headers)) {
+             html += `<div><strong>${key}:</strong> ${value}</div>`;
+         }
+         html += `</div>`;
+    }
+
+    detailsBody.innerHTML = html;
+    detailsModal.classList.remove('hidden');
 }
 
 function shouldShow(req) {
