@@ -1,3 +1,18 @@
+:root {
+  --bg-color: #202124;
+  --panel-bg: #242424;
+  --header-bg: #292a2d;
+  --border-color: #3c4043;
+  --text-primary: #e8eaed;
+  --text-secondary: #9aa0a6;
+  --accent-color: #8ab4f8;
+  --hover-bg: #35363a;
+  --selection-bg: #1c3a5e; /* deep blue selection */
+  --row-hover-bg: #2a2b2e;
+  --code-bg: #202124;
+  --code-text: #e8eaed;
+}
+
 html, body {
   margin: 0;
   padding: 0;
@@ -7,14 +22,17 @@ html, body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
 }
 
 /* Header/Tabs */
 .header {
-  background-color: #f3f3f3;
-  border-bottom: 1px solid #ccc;
+  background-color: var(--header-bg);
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   height: 28px;
+  flex-shrink: 0;
 }
 
 .tabs {
@@ -26,18 +44,21 @@ html, body {
   border: none;
   padding: 0 15px;
   cursor: pointer;
-  color: #5f6368;
+  color: var(--text-secondary);
   border-bottom: 2px solid transparent;
   outline: none;
+  font-size: 12px;
+  transition: color 0.2s, border-bottom 0.2s;
 }
 
 .tab-btn.active {
-  color: #1a73e8;
-  border-bottom: 2px solid #1a73e8;
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--accent-color);
 }
 
 .tab-btn:hover {
-  background-color: #e8eaed;
+  background-color: var(--hover-bg);
+  color: var(--text-primary);
 }
 
 /* Panels */
@@ -46,6 +67,7 @@ html, body {
   flex: 1;
   flex-direction: column;
   overflow: hidden;
+  background-color: var(--panel-bg);
 }
 
 .panel.active {
@@ -57,14 +79,40 @@ html, body {
   display: flex;
   align-items: center;
   padding: 5px;
-  border-bottom: 1px solid #e0e0e0;
-  background: #f1f3f4;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--header-bg);
+  gap: 10px;
+  flex-wrap: wrap; /* Mobile friendly */
+}
+
+.filter-group {
+  display: flex;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
 .filter-group label {
-  margin-right: 10px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-secondary);
+}
+
+.filter-group label:hover {
+  color: var(--text-primary);
+}
+
+button {
+    background-color: var(--hover-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+}
+button:hover {
+    background-color: #3c4043;
 }
 
 /* Network Table */
@@ -76,31 +124,43 @@ html, body {
 .data-grid {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed; /* Better for mobile */
 }
 
 .data-grid th {
   text-align: left;
-  background: #f1f3f4;
-  border-right: 1px solid #e0e0e0;
-  border-bottom: 1px solid #e0e0e0;
+  background: var(--header-bg);
+  border-right: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
   padding: 4px 8px;
   position: sticky;
   top: 0;
   font-weight: normal;
-}
-
-.data-grid td {
-  border-bottom: 1px solid #eee;
-  padding: 4px 8px;
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 
+.data-grid td {
+  border-bottom: 1px solid var(--border-color);
+  padding: 4px 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-primary);
+}
+
 .data-grid tr:hover {
-  background-color: #f5f5f5;
+  background-color: var(--row-hover-bg);
 }
 
 .data-grid tr.error {
-  color: red;
+  color: #f28b82; /* Light red */
+}
+
+/* Cell sub-text for mobile compactness */
+.cell-sub {
+    font-size: 10px;
+    color: var(--text-secondary);
 }
 
 /* Sources Layout */
@@ -110,9 +170,9 @@ html, body {
 
 .sidebar {
   width: 250px;
-  border-right: 1px solid #ccc;
+  border-right: 1px solid var(--border-color);
   overflow-y: auto;
-  background: #fff;
+  background: var(--header-bg);
   display: flex;
   flex-direction: column;
 }
@@ -122,25 +182,39 @@ html, body {
 }
 
 .file-tree-item {
-  padding: 2px 5px;
+  padding: 4px 8px;
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
 }
 
 .file-tree-item:hover {
-  background-color: #f1f3f4;
+  background-color: var(--hover-bg);
+  color: var(--text-primary);
 }
 
 .file-tree-item.selected {
-  background-color: #cfe8fc;
+  background-color: var(--selection-bg);
+  color: var(--text-primary);
+}
+
+.file-icon {
+    font-size: 10px;
+    opacity: 0.7;
+    width: 16px;
+    text-align: center;
 }
 
 .main-content {
   flex: 1;
   overflow: auto;
   position: relative;
+  background-color: var(--code-bg);
 }
 
 .code-viewer {
@@ -148,4 +222,36 @@ html, body {
   white-space: pre;
   font-family: 'Consolas', 'Monaco', monospace;
   tab-size: 2;
+  color: var(--code-text);
+  line-height: 1.5;
+}
+
+/* Mobile / Responsive Adjustments */
+@media (max-width: 600px) {
+  #sources-panel {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: 150px; /* Split view vertical */
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+  }
+
+  .data-grid th:nth-child(4), /* Size */
+  .data-grid td:nth-child(4) {
+      display: none;
+  }
+
+  .data-grid th:nth-child(5), /* Time */
+  .data-grid td:nth-child(5) {
+      display: none;
+  }
+
+  /* Make the name column take more space */
+  .data-grid th:first-child {
+      width: 50%;
+  }
 }
