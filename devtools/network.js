@@ -1,12 +1,14 @@
 // network.js
-import { getFileName, formatBytes, sendCommand } from './utils.js';
+import { getFileName, formatBytes, sendCommand, escapeHtml } from './utils.js';
 
 const networkRequests = new Map(); // requestId -> requestData
 let currentFilter = 'all';
 let networkListEl = null;
 let preserveLog = false;
 let detailsModal = null;
-let detailsBody = null;
+
+// Tab Elements
+let tabHeaders, tabPayload, tabPreview, tabResponse, tabTiming;
 
 export function initNetwork(listElement, filterRadios, clearBtn, preserveCheckbox, modalElement) {
     networkListEl = listElement;
@@ -33,7 +35,15 @@ export function initNetwork(listElement, filterRadios, clearBtn, preserveCheckbo
 
     if (modalElement) {
         detailsModal = modalElement;
-        detailsBody = modalElement.querySelector('#details-body');
+
+        // Cache Tab Panes
+        tabHeaders = modalElement.querySelector('#tab-headers');
+        tabPayload = modalElement.querySelector('#tab-payload');
+        tabPreview = modalElement.querySelector('#tab-preview');
+        tabResponse = modalElement.querySelector('#tab-response');
+        tabTiming = modalElement.querySelector('#tab-timing');
+
+        // Close Button
         modalElement.querySelector('.close-modal').onclick = () => {
             detailsModal.classList.add('hidden');
         };
@@ -43,6 +53,24 @@ export function initNetwork(listElement, filterRadios, clearBtn, preserveCheckbo
                 detailsModal.classList.add('hidden');
             }
         };
+
+        // Tab Switching Logic
+        const tabBtns = modalElement.querySelectorAll('.modal-tab-btn');
+        const tabPanes = modalElement.querySelectorAll('.tab-pane');
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Deactivate all
+                tabBtns.forEach(b => b.classList.remove('active'));
+                tabPanes.forEach(p => p.classList.remove('active'));
+
+                // Activate clicked
+                btn.classList.add('active');
+                const targetId = btn.getAttribute('data-target');
+                const targetPane = modalElement.querySelector(`#${targetId}`);
+                if (targetPane) targetPane.classList.add('active');
+            });
+        });
     }
 }
 
@@ -145,73 +173,110 @@ function renderNetworkRow(requestId) {
         tr.classList.add('error');
     }
 
-    let nameContent = `<div class="cell-text">${req.name}</div><div class="cell-sub">${req.method}</div>`;
+    let nameContent = `<div class="cell-text">${escapeHtml(req.name)}</div><div class="cell-sub">${escapeHtml(req.method)}</div>`;
 
     // Thumbnail for images
     if (req.type === 'Image') {
-         nameContent = `<div class="name-col"><img src="${req.url}" class="row-thumb" alt=""> <div><div class="cell-text">${req.name}</div><div class="cell-sub">${req.method}</div></div></div>`;
+         nameContent = `<div class="name-col"><img src="${escapeHtml(req.url)}" class="row-thumb" alt=""> <div><div class="cell-text">${escapeHtml(req.name)}</div><div class="cell-sub">${escapeHtml(req.method)}</div></div></div>`;
     }
 
     tr.innerHTML = `
-        <td title="${req.url}">${nameContent}</td>
-        <td>${req.status}</td>
-        <td>${req.type}</td>
+        <td title="${escapeHtml(req.url)}">${nameContent}</td>
+        <td>${escapeHtml(req.status)}</td>
+        <td>${escapeHtml(req.type)}</td>
         <td>${formatBytes(req.size)}</td>
-        <td>${req.time || 'Pending'}</td>
+        <td>${escapeHtml(req.time || 'Pending')}</td>
     `;
 }
 
 async function showDetails(req) {
-    if (!detailsModal || !detailsBody) return;
+    if (!detailsModal) return;
 
-    let html = `
-        <div class="details-toolbar">
-            <button class="action-btn" id="btn-copy-curl">Copy as cURL</button>
+    // Clear tabs
+    tabHeaders.innerHTML = '';
+    tabPayload.innerHTML = '';
+    tabPreview.innerHTML = 'Loading...';
+    tabResponse.innerHTML = 'Loading...';
+    tabTiming.innerHTML = '';
+
+    // --- Headers Tab ---
+    let generalHtml = `
+        <div class="header-section">
+            <div class="header-section-title">General</div>
+            <div class="header-row"><span class="header-name">Request URL:</span> <span class="header-value">${escapeHtml(req.url)}</span></div>
+            <div class="header-row"><span class="header-name">Request Method:</span> <span class="header-value">${escapeHtml(req.method)}</span></div>
+            <div class="header-row"><span class="header-name">Status Code:</span> <span class="header-value">${escapeHtml(req.status)}</span></div>
         </div>
-        <p><strong>URL:</strong> <span style="word-break: break-all;">${req.url}</span></p>
-        <p><strong>Method:</strong> ${req.method}</p>
-        <p><strong>Status:</strong> ${req.status}</p>
-        <p><strong>Type:</strong> ${req.type}</p>
-        <p><strong>Size:</strong> ${formatBytes(req.size)}</p>
-        <p><strong>Time:</strong> ${req.time || '-'}</p>
     `;
 
-    if (req.error) {
-        html += `<p style="color:red"><strong>Error:</strong> ${req.error}</p>`;
-    }
-
-    // Request Headers & Body
-    html += `<details open><summary>Request Data</summary>`;
-    if (req.postData) {
-        html += `<h5>Post Data:</h5><pre class="code-block">${escapeHtml(req.postData)}</pre>`;
-    }
-    if (req.requestHeaders) {
-         html += `<h5>Request Headers:</h5><div class="headers-list">`;
-         for (const [key, value] of Object.entries(req.requestHeaders)) {
-             html += `<div><strong>${key}:</strong> ${value}</div>`;
-         }
-         html += `</div>`;
-    }
-    html += `</details>`;
-
     // Response Headers
+    let resHeadersHtml = `<div class="header-section"><div class="header-section-title">Response Headers</div>`;
     if (req.headers) {
-         html += `<details open><summary>Response Headers</summary><div class="headers-list">`;
-         for (const [key, value] of Object.entries(req.headers)) {
-             html += `<div><strong>${key}:</strong> ${value}</div>`;
-         }
-         html += `</div></details>`;
+        const sortedKeys = Object.keys(req.headers).sort();
+        for (const key of sortedKeys) {
+            resHeadersHtml += `<div class="header-row"><span class="header-name">${escapeHtml(key)}:</span> <span class="header-value">${escapeHtml(req.headers[key])}</span></div>`;
+        }
+    } else {
+        resHeadersHtml += `<div style="color:#777; font-style:italic;">No response headers</div>`;
+    }
+    resHeadersHtml += `</div>`;
+
+    // Request Headers
+    let reqHeadersHtml = `<div class="header-section"><div class="header-section-title">Request Headers</div>`;
+    if (req.requestHeaders) {
+        const sortedKeys = Object.keys(req.requestHeaders).sort();
+        for (const key of sortedKeys) {
+            reqHeadersHtml += `<div class="header-row"><span class="header-name">${escapeHtml(key)}:</span> <span class="header-value">${escapeHtml(req.requestHeaders[key])}</span></div>`;
+        }
+    }
+    reqHeadersHtml += `</div>`;
+
+    tabHeaders.innerHTML = generalHtml + resHeadersHtml + reqHeadersHtml;
+
+
+    // --- Payload Tab ---
+    let payloadHtml = '';
+    // Query String Parameters
+    try {
+        const urlObj = new URL(req.url);
+        if (urlObj.searchParams && Array.from(urlObj.searchParams).length > 0) {
+             payloadHtml += `<div class="header-section"><div class="header-section-title">Query String Parameters</div>`;
+             urlObj.searchParams.forEach((value, key) => {
+                 payloadHtml += `<div class="header-row"><span class="header-name">${escapeHtml(key)}:</span> <span class="header-value">${escapeHtml(value)}</span></div>`;
+             });
+             payloadHtml += `</div>`;
+        }
+    } catch(e) {}
+
+    // Request Payload (Post Data)
+    if (req.postData) {
+        payloadHtml += `<div class="header-section"><div class="header-section-title">Request Payload</div>`;
+        payloadHtml += `<pre class="code-block">${escapeHtml(req.postData)}</pre></div>`;
     }
 
-    // Response Body
-    html += `<details open><summary>Response Body</summary>`;
-    html += `<div id="response-body-content">Loading...</div>`;
-    html += `</details>`;
+    if (!payloadHtml) {
+        payloadHtml = '<div style="padding:10px; color:#777;">No payload data</div>';
+    }
+    tabPayload.innerHTML = payloadHtml;
 
-    detailsBody.innerHTML = html;
+
+    // --- Timing Tab ---
+    tabTiming.innerHTML = `
+        <div style="padding:10px;">
+            <p><strong>Started:</strong> ${new Date(req.startTime * 1000).toLocaleString()}</p>
+            <p><strong>Duration:</strong> ${req.time || 'Pending'}</p>
+        </div>
+    `;
+
+
+    // --- Show Modal ---
     detailsModal.classList.remove('hidden');
 
-    // Attach cURL listener
+
+    // --- Async Fetch Body (Preview & Response) ---
+    // Add cURL button to Response tab for utility
+    tabResponse.innerHTML = `<div class="action-bar"><button id="btn-copy-curl">Copy as cURL</button></div><div id="response-content">Loading...</div>`;
+
     document.getElementById('btn-copy-curl').onclick = () => {
         const curl = generateCurl(req);
         navigator.clipboard.writeText(curl).then(() => {
@@ -219,29 +284,41 @@ async function showDetails(req) {
         });
     };
 
-    // Fetch body
     try {
         const result = await sendCommand('Network.getResponseBody', { requestId: req.id });
-        const bodyEl = document.getElementById('response-body-content');
-        if (result.base64Encoded) {
-            if (req.type === 'Image') {
-                bodyEl.innerHTML = `<img src="data:${req.mimeType};base64,${result.body}" style="max-width: 100%;">`;
-            } else {
-                bodyEl.textContent = "(Base64 Data)";
-            }
-        } else {
-            let content = result.body;
-            try {
-                // Try to pretty print JSON
-                if (req.mimeType.includes('json')) {
-                    content = JSON.stringify(JSON.parse(content), null, 2);
-                }
-            } catch(e) {}
-            bodyEl.innerHTML = `<pre class="code-block">${escapeHtml(content)}</pre>`;
+        const contentEl = document.getElementById('response-content');
+
+        let bodyContent = result.body;
+        let isBase64 = result.base64Encoded;
+
+        // Preview Logic
+        if (req.type === 'Image' && isBase64) {
+            tabPreview.innerHTML = `<div style="text-align:center; padding:20px;"><img src="data:${req.mimeType};base64,${bodyContent}" style="max-width:100%; max-height: 400px; border:1px solid #555;"></div>`;
+            if (contentEl) contentEl.textContent = "(Image Data)";
         }
+        else {
+             // Text/JSON
+             let text = bodyContent;
+             // Try to prettify JSON for Preview
+             try {
+                if (req.mimeType && req.mimeType.includes('json')) {
+                    const obj = JSON.parse(text);
+                    // Simple pretty print for now
+                    tabPreview.innerHTML = `<pre class="code-block">${escapeHtml(JSON.stringify(obj, null, 2))}</pre>`;
+                } else {
+                    tabPreview.innerHTML = `<pre class="code-block">${escapeHtml(text)}</pre>`;
+                }
+             } catch(e) {
+                 tabPreview.innerHTML = `<pre class="code-block">${escapeHtml(text)}</pre>`;
+             }
+
+             if (contentEl) contentEl.innerHTML = `<pre class="code-block">${escapeHtml(text)}</pre>`;
+        }
+
     } catch (e) {
-        const bodyEl = document.getElementById('response-body-content');
-        if (bodyEl) bodyEl.textContent = "Failed to load body (might be empty or restricted).";
+        tabPreview.innerHTML = '<div style="padding:10px; color:#777;">No data available</div>';
+        const contentEl = document.getElementById('response-content');
+        if (contentEl) contentEl.textContent = "Failed to load response body.";
     }
 }
 
@@ -261,16 +338,6 @@ function generateCurl(req) {
 
     curl += ` \\\n  --compressed`;
     return curl;
-}
-
-function escapeHtml(text) {
-    if (!text) return '';
-    return text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
 }
 
 function shouldShow(req) {

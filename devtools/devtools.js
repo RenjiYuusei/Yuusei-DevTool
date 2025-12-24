@@ -42,24 +42,26 @@ tabs.forEach(tab => {
 });
 
 // 4. Event Listeners
-chrome.debugger.onEvent.addListener((source, method, params) => {
-    if (source.tabId !== tabId) return;
+if (typeof chrome !== 'undefined' && chrome.debugger) {
+    chrome.debugger.onEvent.addListener((source, method, params) => {
+        if (source.tabId !== tabId) return;
 
-    if (method.startsWith('Network.')) {
-        Network.handleNetworkEvent(method, params);
-    }
-    else if (method === 'Page.frameNavigated') {
-        // Only handle top frame navigation for clearing
-        if (!params.frame || !params.frame.parentId) {
-             Network.handleNavigation();
+        if (method.startsWith('Network.')) {
+            Network.handleNetworkEvent(method, params);
         }
-    }
-    else if (method.startsWith('Debugger.')) {
-        if (method === 'Debugger.scriptParsed') {
-            Sources.handleScriptParsed(params);
+        else if (method === 'Page.frameNavigated') {
+            // Only handle top frame navigation for clearing
+            if (!params.frame || !params.frame.parentId) {
+                 Network.handleNavigation();
+            }
         }
-    }
-});
+        else if (method.startsWith('Debugger.')) {
+            if (method === 'Debugger.scriptParsed') {
+                Sources.handleScriptParsed(params);
+            }
+        }
+    });
+}
 
 // 5. Initial Setup
 async function init() {

@@ -60,9 +60,23 @@
 
   <div id="details-modal" class="modal hidden">
     <div class="modal-content">
-      <span class="close-modal">&times;</span>
-      <h3>Request Details</h3>
-      <div id="details-body"></div>
+      <div class="modal-header">
+        <span class="close-modal">&times;</span>
+        <div class="modal-tabs">
+          <button class="modal-tab-btn active" data-target="tab-headers">Headers</button>
+          <button class="modal-tab-btn" data-target="tab-payload">Payload</button>
+          <button class="modal-tab-btn" data-target="tab-preview">Preview</button>
+          <button class="modal-tab-btn" data-target="tab-response">Response</button>
+          <button class="modal-tab-btn" data-target="tab-timing">Timing</button>
+        </div>
+      </div>
+      <div id="details-body" class="modal-body">
+         <div id="tab-headers" class="tab-pane active"></div>
+         <div id="tab-payload" class="tab-pane"></div>
+         <div id="tab-preview" class="tab-pane"></div>
+         <div id="tab-response" class="tab-pane"></div>
+         <div id="tab-timing" class="tab-pane"></div>
+      </div>
     </div>
   </div>
 

@@ -1,5 +1,5 @@
 // sources.js
-import { getFileName, sendCommand } from './utils.js';
+import { getFileName, sendCommand, escapeHtml } from './utils.js';
 
 let fileTreeEl = null;
 let codeViewerEl = null;
@@ -142,9 +142,18 @@ function createTreeNode(node, level) {
 
     // Icon
     let iconStr = '';
-    if (node.type === 'domain') iconStr = '☁️';
-    else if (node.type === 'folder') iconStr = '📁';
-    else iconStr = '📄';
+    if (node.type === 'domain') {
+        iconStr = '<span class="icon">☁️</span>';
+    } else if (node.type === 'folder') {
+        iconStr = '<span class="icon">📁</span>';
+    } else {
+        // File
+        if (node.name.endsWith('.js') || node.name.includes('.js?')) {
+            iconStr = '<span class="icon-js-file"></span>';
+        } else {
+            iconStr = '<span class="icon">📄</span>';
+        }
+    }
 
     // Toggle Arrow for folders/domains
     let arrow = '';
@@ -154,7 +163,7 @@ function createTreeNode(node, level) {
         arrow = `<span class="arrow spacer"></span>`;
     }
 
-    row.innerHTML = `${arrow} <span class="icon">${iconStr}</span> <span class="label">${node.name}</span>`;
+    row.innerHTML = `${arrow} ${iconStr} <span class="label">${escapeHtml(node.name)}</span>`;
 
     // Event Listeners
     row.onclick = (e) => {
