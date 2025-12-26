@@ -274,6 +274,16 @@ function showValueModal(item) {
     const closeBtn = document.getElementById('value-preview-close');
     closeBtn.onclick = () => modal.classList.add('hidden');
 
+    // Copy Handler
+    const copyBtn = document.getElementById('value-preview-copy');
+    if (copyBtn) {
+        copyBtn.onclick = () => {
+            navigator.clipboard.writeText(item.value).then(() => {
+                alert('Copied value to clipboard');
+            });
+        };
+    }
+
     // Close on click outside
     modal.onclick = (e) => {
         if (e.target === modal) modal.classList.add('hidden');

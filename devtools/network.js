@@ -304,8 +304,14 @@ async function showDetails(req) {
 
 
     // --- Async Fetch Body (Preview & Response) ---
-    // Add cURL button to Response tab for utility
-    tabResponse.innerHTML = `<div class="action-bar"><button id="btn-copy-curl">Copy as cURL</button></div><div id="response-content">Loading...</div>`;
+    // Add cURL button and Copy Response button to Response tab for utility
+    tabResponse.innerHTML = `
+        <div class="action-bar">
+            <button id="btn-copy-curl">Copy as cURL</button>
+            <button id="btn-copy-response">Copy Response</button>
+        </div>
+        <div id="response-content">Loading...</div>
+    `;
 
     document.getElementById('btn-copy-curl').onclick = () => {
         const curl = generateCurl(req);
@@ -316,6 +322,13 @@ async function showDetails(req) {
 
     try {
         const result = await sendCommand('Network.getResponseBody', { requestId: req.id });
+        const bodyText = result.body; // Capture for copy button
+
+        document.getElementById('btn-copy-response').onclick = () => {
+            navigator.clipboard.writeText(bodyText).then(() => {
+                alert('Copied response to clipboard');
+            });
+        };
         const contentEl = document.getElementById('response-content');
 
         let bodyContent = result.body;

@@ -48,21 +48,16 @@ function attachAndOpen(tabId) {
 }
 
 function openWindow(tabId) {
-    chrome.windows.create({
-        url: `devtools/devtools.html?tabId=${tabId}`,
-        type: 'popup', // Keep as popup, but user requested 'full page' behavior.
-                       // 'normal' creates a tab which handles 'click outside' better on mobile.
-                       // However, 'popup' is distinct.
-                       // The user said "opening full like a new page works...".
-                       // Let's switch to 'panel' if possible, or fallback to 'popup'.
-                       // Actually, let's use 'popup' but rely on keep-alive.
-                       // Wait, user specifically said "opens as popup... when clicking outside it closes".
-                       // This is a UI issue. Changing to 'normal' (tab) fixes this.
-        type: 'normal',
-        width: 800,
-        height: 600
-    }, (win) => {
-        attachedTabs.set(tabId, win.id);
+    // Store tabId in storage as backup in case URL params are stripped
+    chrome.storage.local.set({ ['target_tab_' + tabId]: tabId, 'last_target_tab': tabId }, () => {
+        chrome.windows.create({
+            url: `devtools/devtools.html?tabId=${tabId}`,
+            type: 'normal',
+            focused: true
+            // Removed width/height to force full tab behavior on mobile
+        }, (win) => {
+            attachedTabs.set(tabId, win.id);
+        });
     });
 }
 
@@ -86,6 +81,8 @@ function detachAndClean(tabId) {
         if (chrome.runtime.lastError) {}
     });
     attachedTabs.delete(tabId);
+    // Clean up storage
+    chrome.storage.local.remove(['target_tab_' + tabId]);
 }
 
 // Handle detachment (e.g. user clicks "Cancel" on the browser banner)
@@ -98,6 +95,7 @@ chrome.debugger.onDetach.addListener((source, reason) => {
       if (chrome.runtime.lastError) {}
     });
     attachedTabs.delete(tabId);
+    chrome.storage.local.remove(['target_tab_' + tabId]);
   }
 });
 
