@@ -26,6 +26,7 @@ setTabId(tabId);
 // 2. UI Elements & Init
 const networkList = document.getElementById('network-list');
 const filterRadios = document.querySelectorAll('input[name="filter"]');
+const filterText = document.getElementById('network-filter-text');
 const clearNetworkBtn = document.getElementById('clear-network');
 const preserveCheckbox = document.getElementById('preserve-log');
 const hideExtCheckbox = document.getElementById('hide-extension-requests');
@@ -34,7 +35,7 @@ const detailsModal = document.getElementById('details-modal');
 const fileTree = document.getElementById('file-tree');
 const codeViewer = document.getElementById('code-viewer');
 
-Network.initNetwork(networkList, filterRadios, clearNetworkBtn, preserveCheckbox, hideExtCheckbox, detailsModal);
+Network.initNetwork(networkList, filterRadios, filterText, clearNetworkBtn, preserveCheckbox, hideExtCheckbox, detailsModal);
 Sources.initSources(fileTree, codeViewer);
 
 // Expose modules for testing/debugging
