@@ -5,20 +5,52 @@ const attachedTabs = new Map();
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'GET_STATUS') {
         const isAttached = attachedTabs.has(message.tabId);
-        sendResponse({ attached: isAttached });
-    } else if (message.type === 'TOGGLE_DEVTOOLS') {
+        // Verify if window actually exists
+        if (isAttached) {
+             const winId = attachedTabs.get(message.tabId);
+             chrome.windows.get(winId, (win) => {
+                 if (chrome.runtime.lastError || !win) {
+                     // Zombie state
+                     attachedTabs.delete(message.tabId);
+                     sendResponse({ attached: false });
+                 } else {
+                     sendResponse({ attached: true });
+                 }
+             });
+             return true; // Keep channel open for async response
+        }
+        sendResponse({ attached: false });
+        return false; // Response sent synchronously
+    }
+
+    if (message.type === 'TOGGLE_DEVTOOLS') {
         const tabId = message.tabId;
         if (attachedTabs.has(tabId)) {
             const windowId = attachedTabs.get(tabId);
-            chrome.windows.remove(windowId).catch(() => {});
-            detachAndClean(tabId);
-            sendResponse({ attached: false });
+            chrome.windows.get(windowId, (win) => {
+                if (chrome.runtime.lastError || !win) {
+                    // Window lost, but we want to open it (Toggle ON)
+                    // First ensure we detach any lingering debugger
+                    chrome.debugger.detach({ tabId: tabId }, () => {
+                        if (chrome.runtime.lastError) {}
+                        // Now open
+                        attachAndOpen(tabId);
+                        sendResponse({ attached: true });
+                    });
+                } else {
+                    // Window exists, Toggle OFF -> Close it
+                    chrome.windows.remove(windowId).catch(() => {});
+                    detachAndClean(tabId);
+                    sendResponse({ attached: false });
+                }
+            });
+            return true; // Keep channel open for async response
         } else {
             attachAndOpen(tabId);
             sendResponse({ attached: true });
+            return false; // Response sent synchronously (optimistic)
         }
     }
-    return true; // async response
 });
 
 function attachAndOpen(tabId) {
@@ -50,14 +82,6 @@ function attachAndOpen(tabId) {
 function openWindow(tabId) {
     chrome.windows.create({
         url: `devtools/devtools.html?tabId=${tabId}`,
-        type: 'popup', // Keep as popup, but user requested 'full page' behavior.
-                       // 'normal' creates a tab which handles 'click outside' better on mobile.
-                       // However, 'popup' is distinct.
-                       // The user said "opening full like a new page works...".
-                       // Let's switch to 'panel' if possible, or fallback to 'popup'.
-                       // Actually, let's use 'popup' but rely on keep-alive.
-                       // Wait, user specifically said "opens as popup... when clicking outside it closes".
-                       // This is a UI issue. Changing to 'normal' (tab) fixes this.
         type: 'normal',
         width: 800,
         height: 600
@@ -69,14 +93,8 @@ function openWindow(tabId) {
 // Keep-Alive Logic
 chrome.runtime.onConnect.addListener((port) => {
     if (port.name === 'devtools-page') {
-        // Find the tabId from the port's sender url if possible, or wait for message
-        // Ideally devtools.js sends a message immediately with tabId,
-        // but 'attachedTabs' map helps track window->tab.
-
         port.onDisconnect.addListener(() => {
-            // If the devtools page closes, we might want to detach the debugger
-            // But we already have chrome.windows.onRemoved.
-            // This is primarily to keep the SW alive.
+            // Managed via windows.onRemoved
         });
     }
 });
