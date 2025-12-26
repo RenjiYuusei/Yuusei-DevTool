@@ -3,6 +3,7 @@ import { getFileName, formatBytes, sendCommand, escapeHtml } from './utils.js';
 
 const networkRequests = new Map(); // requestId -> requestData
 let currentFilter = 'all';
+let currentFilterText = '';
 let networkListEl = null;
 let preserveLog = false;
 let hideExtensionRequests = true;
@@ -11,7 +12,7 @@ let detailsModal = null;
 // Tab Elements
 let tabHeaders, tabPayload, tabPreview, tabResponse, tabTiming;
 
-export function initNetwork(listElement, filterRadios, clearBtn, preserveCheckbox, hideExtCheckbox, modalElement) {
+export function initNetwork(listElement, filterRadios, filterTextInput, clearBtn, preserveCheckbox, hideExtCheckbox, modalElement) {
     networkListEl = listElement;
 
     // Filter Listeners
@@ -21,6 +22,13 @@ export function initNetwork(listElement, filterRadios, clearBtn, preserveCheckbo
             refreshNetworkTable();
         });
     });
+
+    if (filterTextInput) {
+        filterTextInput.addEventListener('input', (e) => {
+            currentFilterText = e.target.value.toLowerCase();
+            refreshNetworkTable();
+        });
+    }
 
     if (clearBtn) {
         clearBtn.addEventListener('click', () => {
@@ -399,6 +407,16 @@ function shouldShow(req) {
     if (hideExtensionRequests && req.url && req.url.startsWith('chrome-extension://')) {
         return false;
     }
+
+    // Text Filter
+    if (currentFilterText) {
+        const name = req.name ? req.name.toLowerCase() : '';
+        const url = req.url ? req.url.toLowerCase() : '';
+        if (!name.includes(currentFilterText) && !url.includes(currentFilterText)) {
+            return false;
+        }
+    }
+
     if (currentFilter === 'all') return true;
     return req.type === currentFilter || (currentFilter === 'Fetch' && req.type === 'XHR');
 }
