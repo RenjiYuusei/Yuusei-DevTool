@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Yuusei Devtools",
-  "version": "2.1",
-  "description": "A DevTools extension with Network (filters) and Source tabs. Mobile friendly.",
+  "version": "1.1",
+  "description": "DevTools extension",
   "permissions": [
     "debugger",
     "tabs",
