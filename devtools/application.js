@@ -270,6 +270,31 @@ function showValueModal(item) {
 
     modal.classList.remove('hidden');
 
+    // Setup Copy Button
+    let copyBtn = document.getElementById('value-preview-copy');
+    if (!copyBtn) {
+        // Check if button exists, if not, create it
+        const footer = modal.querySelector('.modal-footer');
+        if (footer) {
+             copyBtn = document.createElement('button');
+             copyBtn.id = 'value-preview-copy';
+             copyBtn.className = 'btn';
+             copyBtn.textContent = 'Copy';
+             copyBtn.style.marginRight = '10px';
+             footer.insertBefore(copyBtn, footer.firstChild);
+        }
+    }
+
+    if (copyBtn) {
+        copyBtn.onclick = () => {
+             navigator.clipboard.writeText(displayValue).then(() => {
+                 const originalText = copyBtn.textContent;
+                 copyBtn.textContent = 'Copied!';
+                 setTimeout(() => copyBtn.textContent = originalText, 1500);
+             });
+        };
+    }
+
     // Close handlers
     const closeBtn = document.getElementById('value-preview-close');
     closeBtn.onclick = () => modal.classList.add('hidden');

@@ -305,7 +305,13 @@ async function showDetails(req) {
 
     // --- Async Fetch Body (Preview & Response) ---
     // Add cURL button to Response tab for utility
-    tabResponse.innerHTML = `<div class="action-bar"><button id="btn-copy-curl">Copy as cURL</button></div><div id="response-content">Loading...</div>`;
+    tabResponse.innerHTML = `
+        <div class="action-bar">
+            <button id="btn-copy-curl">Copy as cURL</button>
+            <button id="btn-copy-response">Copy Response</button>
+        </div>
+        <div id="response-content">Loading...</div>
+    `;
 
     document.getElementById('btn-copy-curl').onclick = () => {
         const curl = generateCurl(req);
@@ -319,6 +325,13 @@ async function showDetails(req) {
         const contentEl = document.getElementById('response-content');
 
         let bodyContent = result.body;
+
+        document.getElementById('btn-copy-response').onclick = () => {
+             navigator.clipboard.writeText(bodyContent).then(() => {
+                 alert('Copied response to clipboard');
+             });
+        };
+
         let isBase64 = result.base64Encoded;
 
         // Preview Logic
@@ -349,6 +362,9 @@ async function showDetails(req) {
         tabPreview.innerHTML = '<div style="padding:10px; color:#777;">No data available</div>';
         const contentEl = document.getElementById('response-content');
         if (contentEl) contentEl.textContent = "Failed to load response body.";
+        // Disable copy button if failed
+        const copyBtn = document.getElementById('btn-copy-response');
+        if (copyBtn) copyBtn.disabled = true;
     }
 }
 
